@@ -1,7 +1,7 @@
 clear;
 clc;
 
-%filename = 'GRAVACAO.RAW';
+%filename = 'AUDIO.RAW';
 %filename = 'ultrasound_pdm_10_32bitsample_5000000hz';
 filename = 'working_silence_pdm_1_32bitsample_3749995hz';
 fid = fopen(filename, 'r');
