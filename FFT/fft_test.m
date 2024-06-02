@@ -1,7 +1,6 @@
 clear;
 clc;
 
-%filename = 'AUDIO.RAW';
 %filename = 'ultrasound_pdm_10_32bitsample_5000000hz';
 filename = 'working_silence_pdm_1_32bitsample_3749995hz';
 fid = fopen(filename, 'r');
@@ -26,7 +25,6 @@ title('Sinal Trem de Pulso');
 xlabel('Amostras');
 ylabel('Amplitude');
 
-%fs = 44100;
 %fs = 5000000;
 fs = 3749995;
 %f = [0:Nfft-1]*fs/Nfft;
