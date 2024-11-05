@@ -3,7 +3,7 @@ clear;
 clc;
 
 % 1. LER O ARQUIVO DE ÁUDIO PDM (.WAV)
-filename = 'REC_15kHz_4.WAV';
+filename = 'REC_10kHz_4.WAV';
 fid = fopen(filename, 'r');
 data = fread(fid, '*uint32');
 fclose(fid);
@@ -27,9 +27,8 @@ M = 1;         % Atraso diferencial do CIC
 %cicDecim = dsp.CICDecimator('DecimationFactor', R, 'DifferentialDelay', M, 'NumSections', N);
 %cic_processed = cicDecim(reorganizedData.'); 
 
-cic_processed = cic_decimator(reorganizedData, R, N);
-
-fs_cic = fs / R;  % New sampling frequency after CIC
+cic_processed = cic_decimator(reorganizedData, R, M, N); 
+fs_cic = fs / R;  % Nova frequência de amostragem após o CIC
 
 % 6. Criar o filtro FIR
 Fc_norm = fc / (fs_cic / 2); % Frequência de corte normalizada para fs_cic
@@ -37,7 +36,6 @@ coeficientes_fir = [0.000792054770933056,-0.000442986869603646,-0.00034671584060
 
 % 7. Aplicar o filtro FIR
 fir_processed = my_filter_FIR(coeficientes_fir, cic_processed);
-
 
 % 8. Calcular os espectros
 Nfft_filter = length(cic_processed);
@@ -106,33 +104,25 @@ end
 end
 
 
-function cic_processed = cic_decimator(reorganizedData, R, N)
-    % Inicializa o vetor cicDecim com zeros, com tamanho N
-    cicDecim = zeros(1, N);
-    % O primeiro valor de cicDecim é 1 (valor de normalização)
-    cicDecim(1) = 1; 
+function y = customCICDecimator(x, R, M, N)
+    % Initialize variables
+    L = R * M; % Length of the filter
+    x = reshape(x, [], 1); % Ensure x is a column vector
+    y = zeros(floor(length(x) / R), 1); % Preallocate output
 
-    % Preenche o vetor cicDecim com os valores dos coeficientes CIC
-    for i = 2:N
-         % Cada valor cicDecim(i) é o anterior multiplicado pelo fator 1/R
-         cicDecim(i) = cicDecim(i-1) * (1/R); 
+    % Perform CIC Decimation
+    for i = 1:N
+        x = cumsum(x); % Integrate
     end
     
-    % Inicializa o vetor cic_processed, que armazenará os dados processados
-    % O tamanho do vetor cic_processed é o comprimento dos dados reorganizados dividido por R
-    cic_processed = zeros(1, floor(length(reorganizedData)/R));
-    
-    % Loop sobre cada posição do vetor cic_processed
-    for i = 1:length(cic_processed)
-        % Calcula o valor de cada elemento cic_processed(i) como a soma
-        % dos R elementos correspondentes em reorganizedData multiplicados
-        % pelo último coeficiente cicDecim(N)
-        cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * cicDecim(N);
-        %cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R));
+    % Decimate
+    for i = 1:length(y)
+        y(i) = x((i-1)*R + 1);
     end
+    
+    % Apply differential delay
+    y = y(M:end);
 end
-
-
 
 
 
