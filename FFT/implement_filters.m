@@ -27,6 +27,15 @@ M = 1;         % Atraso diferencial do CIC
 %cicDecim = dsp.CICDecimator('DecimationFactor', R, 'DifferentialDelay', M, 'NumSections', N);
 %cic_processed = cicDecim(reorganizedData.'); 
 
+% Salvar os dados de entrada e saída em arquivos CSV
+%csvwrite('reorganizedData.csv', reorganizedData);
+%csvwrite('cic_processed.csv', cic_processed);
+
+% Salvar os dados em arquivos de texto
+%dlmwrite('reorganizedData.txt', reorganizedData, 'delimiter', '\n');
+%dlmwrite('cic_processed.txt', cic_processed, 'delimiter', '\n');
+
+
 cic_processed = cic_decimator(reorganizedData, R, N);
 
 fs_cic = fs / R;  % New sampling frequency after CIC
@@ -115,7 +124,7 @@ function cic_processed = cic_decimator(reorganizedData, R, N)
     % Preenche o vetor cicDecim com os valores dos coeficientes CIC
     for i = 2:N
          % Cada valor cicDecim(i) é o anterior multiplicado pelo fator 1/R
-         cicDecim(i) = cicDecim(i-1) * (1/R); 
+         cicDecim(i) = cicDecim(i-1) * (1/R);
     end
     
     % Inicializa o vetor cic_processed, que armazenará os dados processados
@@ -127,11 +136,12 @@ function cic_processed = cic_decimator(reorganizedData, R, N)
         % Calcula o valor de cada elemento cic_processed(i) como a soma
         % dos R elementos correspondentes em reorganizedData multiplicados
         % pelo último coeficiente cicDecim(N)
-        cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * cicDecim(N);
+        %cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * cicDecim(N);
         %cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R));
+        cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * (1/R);
+
     end
 end
-
 
 
 
