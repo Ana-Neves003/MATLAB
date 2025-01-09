@@ -36,7 +36,7 @@ M = 1;         % Atraso diferencial do CIC
 %dlmwrite('cic_processed.txt', cic_processed, 'delimiter', '\n');
 
 
-cic_processed = cic_decimator(reorganizedData, R, N);
+cic_processed = cic_filter(reorganizedData, R, N, M);
 
 fs_cic = fs / R;  % New sampling frequency after CIC
 
@@ -115,34 +115,48 @@ end
 end
 
 
-function cic_processed = cic_decimator(reorganizedData, R, N)
-    % Inicializa o vetor cicDecim com zeros, com tamanho N
-    cicDecim = zeros(1, N);
-    % O primeiro valor de cicDecim é 1 (valor de normalização)
-    cicDecim(1) = 1; 
-
-    % Preenche o vetor cicDecim com os valores dos coeficientes CIC
-    for i = 2:N
-         % Cada valor cicDecim(i) é o anterior multiplicado pelo fator 1/R
-         cicDecim(i) = cicDecim(i-1) * (1/R);
+function y_out = cic_filter(x_in, R, M, N)
+    % CIC Filter Implementation
+    % x_in : Vetor de entrada (sinal de entrada)
+    % R    : Fator de redução (decimação)
+    % M    : Atraso diferencial
+    % N    : Número de estágios do CIC
+    %
+    % y_out: Vetor de saída (sinal filtrado)
+    
+    % Verificar entrada
+    %if nargin < 4
+    %    error('São necessários 4 argumentos: x_in, R, M, N');
+    %end
+    
+    % Garantir que o sinal de entrada seja um vetor coluna
+    % Para que as operações como cumsum e diff funcionem corretamente
+    if isrow(x_in)
+        x_in = x_in(:); % Converte para vetor coluna
     end
     
-    % Inicializa o vetor cic_processed, que armazenará os dados processados
-    % O tamanho do vetor cic_processed é o comprimento dos dados reorganizados dividido por R
-    cic_processed = zeros(1, floor(length(reorganizedData)/R));
-    
-    % Loop sobre cada posição do vetor cic_processed
-    for i = 1:length(cic_processed)
-        % Calcula o valor de cada elemento cic_processed(i) como a soma
-        % dos R elementos correspondentes em reorganizedData multiplicados
-        % pelo último coeficiente cicDecim(N)
-        %cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * cicDecim(N);
-        %cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R));
-        cic_processed(i) = sum(reorganizedData((i-1)*R+1:i*R)) * (1/R);
-
+    % Etapa 1: Integradores
+    % Somatório cumulativo repetido N vezes.
+    integrators = x_in; % Inicializa o sinal de entrada
+    for stage = 1:N
+        integrators = cumsum(integrators); % Aplica o somatório cumulativo
     end
+    
+    % Etapa 2: Decimação
+    % Redução a taxa de amostragem pegando apenas uma a cada R amostras.
+    decimated = integrators(1:R:end); % Seleciona uma amostra a cada R
+
+    % Etapa 3: Combs
+    % A operação diferencial (Comb) é aplicada N vezes.
+    combs = decimated; % Inicializa com o sinal decimado
+    for stage = 1:N
+        % Aqui o diff é usado para calcular a diferença entre amostras consecutivas.
+        % É adicionado zeros no início para simular o atraso M.
+        combs = [combs(1:M); diff(combs, M)]; % Comb com atraso diferencial M, nesse caso nem precisa pq M = 1
+    end
+    
+    % Saída final
+    y_out = combs; 
 end
-
-
 
 
