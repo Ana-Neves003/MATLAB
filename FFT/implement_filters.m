@@ -3,7 +3,7 @@ clear;
 clc;
 
 % 1. LER O ARQUIVO DE ÁUDIO PDM (.WAV)
-filename = 'REC_15kHz_4.WAV';
+filename = 'REC_5kHz_4.WAV';
 fid = fopen(filename, 'r');
 data = fread(fid, '*uint32');
 fclose(fid);
@@ -36,7 +36,8 @@ M = 1;         % Atraso diferencial do CIC
 %dlmwrite('cic_processed.txt', cic_processed, 'delimiter', '\n');
 
 
-cic_processed = cic_filter(reorganizedData, R, N, M);
+%cic_processed = cic_filter(reorganizedData, R, N, M);
+cic_processed = cic_filter(reorganizedData, R, N);
 
 fs_cic = fs / R;  % New sampling frequency after CIC
 
@@ -115,48 +116,60 @@ end
 end
 
 
-function y_out = cic_filter(x_in, R, M, N)
-    % CIC Filter Implementation
-    % x_in : Vetor de entrada (sinal de entrada)
-    % R    : Fator de redução (decimação)
-    % M    : Atraso diferencial
-    % N    : Número de estágios do CIC
-    %
-    % y_out: Vetor de saída (sinal filtrado)
-    
-    % Verificar entrada
-    %if nargin < 4
-    %    error('São necessários 4 argumentos: x_in, R, M, N');
-    %end
-    
-    % Garantir que o sinal de entrada seja um vetor coluna
-    % Para que as operações como cumsum e diff funcionem corretamente
-    if isrow(x_in)
-        x_in = x_in(:); % Converte para vetor coluna
-    end
-    
-    % Etapa 1: Integradores
-    % Somatório cumulativo repetido N vezes.
-    integrators = x_in; % Inicializa o sinal de entrada
-    for stage = 1:N
-        integrators = cumsum(integrators); % Aplica o somatório cumulativo
-    end
-    
-    % Etapa 2: Decimação
-    % Redução a taxa de amostragem pegando apenas uma a cada R amostras.
-    decimated = integrators(1:R:end); % Seleciona uma amostra a cada R
+function y = cic_filter(x, R, N)
+    % x: sinal de entrada
+    % R: fator de decimação
+    % N: número de estágios do filtro CIC
 
-    % Etapa 3: Combs
-    % A operação diferencial (Comb) é aplicada N vezes.
-    combs = decimated; % Inicializa com o sinal decimado
+    % -------------------------
+    % Etapa 1: Integração
+    % -------------------------
+    % Nesta etapa, o sinal de entrada passa por N acumuladores consecutivos.
+    % Cada acumulador soma a amostra atual com o valor acumulado anterior.
+    integrator = x; % Inicializa com o sinal de entrada
     for stage = 1:N
-        % Aqui o diff é usado para calcular a diferença entre amostras consecutivas.
-        % É adicionado zeros no início para simular o atraso M.
-        combs = [combs(1:M); diff(combs, M)]; % Comb com atraso diferencial M, nesse caso nem precisa pq M = 1
+        % Acumulação (somatório cumulativo)
+        for i = 2:length(integrator)
+            integrator(i) = integrator(i-1) + integrator(i);
+        end
     end
-    
-    % Saída final
-    y_out = combs; 
+
+    % -------------------------
+    % Etapa 2: Decimação
+    % -------------------------
+    % A taxa de amostragem do sinal é reduzida por um fator R.
+    % Apenas uma a cada R amostras é mantida.
+    decimated = integrator(1:R:end); % Seleciona uma amostra a cada R
+
+    % -------------------------
+    % Etapa 3: Filtragem Comb
+    % -------------------------
+    % Nesta etapa, são aplicados N estágios de filtros diferenciais.
+    % Cada filtro calcula a diferença entre a amostra atual e uma atrasada por R.
+    y = decimated; % Inicializa a saída com o sinal decimado
+    for stage = 1:N
+        % Cria um vetor para armazenar o sinal filtrado em cada estágio
+        comb = zeros(1, length(y));
+        for n = 1:length(y)
+            if n <= R
+                % Para as primeiras amostras, onde o atraso R não é possível,
+                % apenas copia a amostra sem subtração
+                comb(n) = y(n);
+            else
+                % Subtrai a amostra atual da amostra atrasada por R
+                comb(n) = y(n) - y(n-R);
+            end
+        end
+        % Atualiza y com o resultado do estágio atual do filtro comb
+        y = comb;
+    end
 end
+
+
+
+
+
+
+
 
 
