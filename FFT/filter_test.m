@@ -3,7 +3,7 @@ clear;
 clc;
 
 % 1. LER O ARQUIVO DE ÁUDIO PDM (.WAV)
-filename = 'REC_15kHz_4.WAV';
+filename = 'REC_5kHz_4.WAV';
 fid = fopen(filename, 'r');
 data = fread(fid, '*uint32');
 fclose(fid);
@@ -25,7 +25,8 @@ R = 16;        % Taxa de decimação do CIC
 M = 1;         % Atraso diferencial do CIC
 
 % 4. Criar o filtro CIC
-cicDecim = dsp.CICDecimator('DecimationFactor', R, 'DifferentialDelay', M, 'NumSections', N);
+%cicDecim = dsp.CICDecimator('DecimationFactor', R, 'DifferentialDelay', M, 'NumSections', N);
+cicDecim = dsp.CICDecimator('DecimationFactor', R, 'NumSections', N);
 
 % 5. Aplicar o filtro CIC
 cic_processed = cicDecim(reorganizedData.'); 

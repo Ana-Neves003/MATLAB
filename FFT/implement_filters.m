@@ -115,55 +115,45 @@ for n = 1:length(x)
 end
 end
 
-
 function y = cic_filter(x, R, N)
-    % x: sinal de entrada
-    % R: fator de decimação
-    % N: número de estágios do filtro CIC
-
-    % -------------------------
+    % Variaveis
+    L = length(x);
+    integrator = zeros(1, L);
+    decimated = zeros(1, floor(L / R));
+    y = zeros(1, length(decimated));
+    
     % Etapa 1: Integração
-    % -------------------------
-    % Nesta etapa, o sinal de entrada passa por N acumuladores consecutivos.
-    % Cada acumulador soma a amostra atual com o valor acumulado anterior.
-    integrator = x; % Inicializa com o sinal de entrada
     for stage = 1:N
-        % Acumulação (somatório cumulativo)
-        for i = 2:length(integrator)
-            integrator(i) = integrator(i-1) + integrator(i);
+        for i = 1:L
+           if i == 1
+               integrator(i) = x(i);
+           else
+               integrator(i) = integrator(i-1) + x(i);
+           end
         end
     end
-
-    % -------------------------
+   
+    
     % Etapa 2: Decimação
-    % -------------------------
-    % A taxa de amostragem do sinal é reduzida por um fator R.
-    % Apenas uma a cada R amostras é mantida.
-    decimated = integrator(1:R:end); % Seleciona uma amostra a cada R
-
-    % -------------------------
-    % Etapa 3: Filtragem Comb
-    % -------------------------
-    % Nesta etapa, são aplicados N estágios de filtros diferenciais.
-    % Cada filtro calcula a diferença entre a amostra atual e uma atrasada por R.
-    y = decimated; % Inicializa a saída com o sinal decimado
-    for stage = 1:N
-        % Cria um vetor para armazenar o sinal filtrado em cada estágio
-        comb = zeros(1, length(y));
-        for n = 1:length(y)
-            if n <= R
-                % Para as primeiras amostras, onde o atraso R não é possível,
-                % apenas copia a amostra sem subtração
-                comb(n) = y(n);
-            else
-                % Subtrai a amostra atual da amostra atrasada por R
-                comb(n) = y(n) - y(n-R);
-            end
+    for j = 1:floor(L / R)
+        if j * R <= L
+            decimated(j) = integrator(j * R);
         end
-        % Atualiza y com o resultado do estágio atual do filtro comb
-        y = comb;
+    end
+    
+    % Etapa 3: Comb
+    for stage = 1:N
+        y(1) = decimated(1);
+        for k = 2:length(decimated)
+            y(k) = decimated(k) - decimated(k-1);            
+        end
     end
 end
+
+
+
+   
+
 
 
 
